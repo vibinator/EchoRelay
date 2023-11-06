@@ -152,7 +152,7 @@ namespace EchoRelay.App.Settings
         public void Save(string filePath) 
         {
             // Serialize the settings.
-            string jsonContents = JsonConvert.SerializeObject(this);
+            string jsonContents = JsonConvert.SerializeObject(this, Formatting.Indented);
 
             // Write it to file.
             File.WriteAllText(filePath, jsonContents);
