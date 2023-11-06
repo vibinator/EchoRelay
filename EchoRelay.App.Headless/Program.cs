@@ -97,17 +97,25 @@ namespace EchoRelay
 
 
                 // Collect settings
-                settings.Port = ReadUShortInput("Enter the Port: ");
-                settings.FilesystemDatabaseDirectory = ReadDirectoryInput("Enter the Database Directory: ");
-                settings.GameExecutableFilePath = ReadDirectoryInput("Enter the Game Executeable file path: ");
+                settings.Port = ReadUShortInput("Listen port: ");
+                settings.FilesystemDatabaseDirectory = ReadDirectoryInput("Database directory path: ");
+                settings.GameExecutableFilePath = ReadDirectoryInput("Game executeable file path: ");
                 settings.StartServerOnStartup = true;
-                if (ReadBoolInput("Use Server DB Api Key? (y/n): "))
+
+                if (ReadBoolInput("Use ServerDB API key? (y/n): "))
+                {
+                    Console.Write("Specify key: ");
                     settings.ServerDBApiKey = Console.ReadLine();
-                settings.MatchingPopulationOverPing = ReadBoolInput("Matching population over ping? (y/n): ");
-                settings.MatchingForceIntoAnySessionOnFailure = ReadBoolInput("Force into any session on failure? (y/n): ");
+                }
+
+                settings.MatchingPopulationOverPing = ReadBoolInput("Prefer population over ping when matching? (y/n): ");
+                settings.MatchingForceIntoAnySessionOnFailure = ReadBoolInput("Force player into any session on match failure? (y/n): ");
 
                 // Save the settings.
                 settings.Save(SettingsFilePath);
+                Console.WriteLine();
+                Console.WriteLine(String.Format("Settings saved to '{0}'.", SettingsFilePath));
+                Console.WriteLine();
             }
 
             // Set our loaded/created settings
