@@ -2,8 +2,6 @@
 #include "patches.h"
 #include "processmem.h"
 #include <detours.h>
-#include <iostream>
-#include <string>
 
 /// <summary>
 /// Indicates whether the patches have been applied (to avoid re-application).
@@ -26,24 +24,11 @@ BOOL isHeadless = false;
 /// A CLI argument flag indicating whether the game is booting in a windowed mode, rather than with a VR headset.
 /// </summary>
 BOOL isWindowed = false;
-/// <summary>
-/// A CLI argument flag indicating whether the game is booting with a set fixed timestep.
-/// </summary>
-BOOL isTimeStep = false;
-/// <summary>
-/// A CLI argument flag indicating whether the game is booting with a fixed timestep.
-/// </summary>
-BOOL isFixedTimeStep = false;
 
 /// <summary>
 /// The local config stored in ./_local/config.json.
 /// </summary>
 EchoVR::Json* localConfig = NULL;
-
-/// <summary>
-/// The timestep for when running in headless.
-/// </summary>
-int timestep = 90;
 
 /// <summary>
 /// Reports a fatal error with a message box, then exits the game.
@@ -326,9 +311,6 @@ UINT64 BuildCmdLineSyntaxDefinitionsHook(PVOID pGame, PVOID pArgSyntax)
     EchoVR::AddArgSyntax(pArgSyntax, "-windowed", 0, 0, FALSE);
     EchoVR::AddArgHelpString(pArgSyntax, "-windowed", "[patch] Run the game with no headset, in a window");
 
-    EchoVR::AddArgSyntax(pArgSyntax, "-timestep", 1, 1, FALSE);
-    EchoVR::AddArgHelpString(pArgSyntax, "-timestep", "[patch] The timestep size in Hertz (default: 90)");
-
     return result;
 }
 
@@ -341,7 +323,6 @@ UINT64 PreprocessCommandLineHook(PVOID pGame)
     // Check which were set with command line arguments.
     int argc;
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-
     for (int i = 0; i < argc; i++)
     {
         if (lstrcmpW(argv[i], L"-server") == 0)
@@ -352,20 +333,6 @@ UINT64 PreprocessCommandLineHook(PVOID pGame)
             isHeadless = true;
         else if (lstrcmpW(argv[i], L"-windowed") == 0)
             isWindowed = true;
-        else if (lstrcmpW(argv[i], L"-fixedtimestep") == 0)
-            isFixedTimeStep = true;
-        else if (lstrcmpW(argv[i], L"-timestep") == 0) {
-            try {
-                timestep = std::stoi(argv[++i]);
-                isTimeStep = true;
-            }
-            catch (const std::invalid_argument& e) {
-                FatalError("-timestep argument must be followed by a valid int representing timestep in hertz", NULL);
-            }
-            catch (const std::out_of_range& e) {
-                FatalError("-timestep argument must be followed by a valid int representing timestep in hertz", NULL);
-            }
-        }
     }
 
     // Verify server and offline flags are not enabled.
@@ -379,11 +346,6 @@ UINT64 PreprocessCommandLineHook(PVOID pGame)
     // If the headless flag was provided, enable it.
     if (isHeadless)
         PatchEnableHeadless(pGame);
-
-    // Verify fixedtimestep is used when timestep is used.
-    if (isTimeStep && !isFixedTimeStep) {
-        FatalError("-timestep argument must be used with -fixedtimestep", NULL);
-    }
 
     // If the windowed, server, or headless flags were provided, apply the windowed mode patch to not use a VR headset.
     if (isWindowed || isServer || isHeadless)
@@ -408,15 +370,6 @@ UINT64 PreprocessCommandLineHook(PVOID pGame)
 /// <param name="pGame">A pointer to the game struct to load the config for.</param>
 UINT64 LoadLocalConfigHook(PVOID pGame)
 {
-    // Patch the timestep/tickrate if headless. (Done when loading localconfig so that the memory is allocated)
-    if (isHeadless) {
-        // Pointer to Pointer with timestep in microseconds. timestep = (1/TickRate) * 1000000
-        uintptr_t* tickPtr = reinterpret_cast<uintptr_t*>(EchoVR::g_GameBaseAddress + 0x020A00E8); 
-        int* tick = reinterpret_cast<int*>(*tickPtr + 0x90);
-        float timestepMicrosec = (1 / (float)timestep) * 1000000;
-        *tick = timestepMicrosec; // Sets TPS value of headless server to value given by -timestep or defualts to 90.
-    }
-
     // Store a reference to the local config.
     localConfig = (EchoVR::Json*)((CHAR*)pGame + 0x63240);
     return EchoVR::LoadLocalConfig(pGame);
