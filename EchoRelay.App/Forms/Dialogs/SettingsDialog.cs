@@ -31,7 +31,6 @@ namespace EchoRelay.App.Forms.Dialogs
             if (Settings.FilesystemDatabaseDirectory != null)
                 txtDbFolder.Text = Settings.FilesystemDatabaseDirectory;
             chkStartServerOnStartup.Checked = Settings.StartServerOnStartup;
-            chkAllowUnverifiedServers.Checked = Settings.ServerDBAllowUnverifiedServers;
             chkPopulationOverPing.Checked = Settings.MatchingPopulationOverPing;
             chkForceIntoAnySession.Checked = Settings.MatchingForceIntoAnySessionOnFailure;
 
@@ -105,7 +104,6 @@ namespace EchoRelay.App.Forms.Dialogs
             Settings.MongoDBConnectionString = null; // TODO: currently unsupported
             Settings.StartServerOnStartup = chkStartServerOnStartup.Checked;
             Settings.ServerDBApiKey = newServerDbApiKey;
-            Settings.ServerDBAllowUnverifiedServers = chkAllowUnverifiedServers.Checked;
             Settings.MatchingPopulationOverPing = chkPopulationOverPing.Checked;
             Settings.MatchingForceIntoAnySessionOnFailure = chkForceIntoAnySession.Checked;
 

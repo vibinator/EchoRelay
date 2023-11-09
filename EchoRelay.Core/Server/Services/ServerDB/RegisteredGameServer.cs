@@ -145,8 +145,6 @@ namespace EchoRelay.Core.Server.Services.ServerDB
         /// A lock used for asynchronous/awaitable concurrent access to this object.
         /// </summary>
         public AsyncLock _accessLock;
-
-        public bool Verified { get; private set; }
         #endregion
 
         #region Events
@@ -186,7 +184,7 @@ namespace EchoRelay.Core.Server.Services.ServerDB
         #endregion
 
         #region Constructor
-        public RegisteredGameServer(GameServerRegistry registry, Peer peer, ERGameServerRegistrationRequest registrationRequest, bool verified)
+        public RegisteredGameServer(GameServerRegistry registry, Peer peer, ERGameServerRegistrationRequest registrationRequest)
         {
             Registry = registry;
             Peer = peer;
@@ -195,7 +193,6 @@ namespace EchoRelay.Core.Server.Services.ServerDB
             SessionPlayerLimit = 16;
             _playerSessions = new Dictionary<Guid, Peer>();
             _accessLock = new AsyncLock();
-            Verified = verified;
         }
         #endregion
 

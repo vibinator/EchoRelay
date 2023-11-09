@@ -55,7 +55,6 @@
             kickToolStripMenuItem = new ToolStripMenuItem();
             contextMenuGameServers = new ContextMenuStrip(components);
             copySessionLobbyIdToolStripMenuItem = new ToolStripMenuItem();
-            columnHeaderVerified = new ColumnHeader();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -68,7 +67,7 @@
             // 
             // listGameServers
             // 
-            listGameServers.Columns.AddRange(new ColumnHeader[] { columnHeaderServerId, columnHeaderIP, columnHeaderBroadcastPort, columnHeaderGametype, columnHeaderLevel, columnHeaderPlayerCount, columnHeaderLobbyType, columnHeaderLocked, columnHeaderChannel, columnHeaderSessionId, columnHeaderVerified });
+            listGameServers.Columns.AddRange(new ColumnHeader[] { columnHeaderServerId, columnHeaderIP, columnHeaderBroadcastPort, columnHeaderGametype, columnHeaderLevel, columnHeaderPlayerCount, columnHeaderLobbyType, columnHeaderLocked, columnHeaderChannel, columnHeaderSessionId });
             listGameServers.Dock = DockStyle.Fill;
             listGameServers.FullRowSelect = true;
             listGameServers.GridLines = true;
@@ -128,7 +127,7 @@
             // columnHeaderSessionId
             // 
             columnHeaderSessionId.Text = "Session/Lobby Identifier";
-            columnHeaderSessionId.Width = 240;
+            columnHeaderSessionId.Width = 300;
             // 
             // splitContainer1
             // 
@@ -249,10 +248,6 @@
             copySessionLobbyIdToolStripMenuItem.Text = "Copy Session / Lobby Id";
             copySessionLobbyIdToolStripMenuItem.Click += copySessionLobbyIdToolStripMenuItem_Click;
             // 
-            // columnHeaderVerified
-            // 
-            columnHeaderVerified.Text = "Verified";
-            // 
             // GameServersControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -299,6 +294,5 @@
         private ToolStripMenuItem copyUserIdToolStripMenuItem;
         private ToolStripMenuItem copyIPAddressToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator1;
-        private ColumnHeader columnHeaderVerified;
     }
 }

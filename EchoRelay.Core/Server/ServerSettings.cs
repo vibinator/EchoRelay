@@ -56,8 +56,6 @@ namespace EchoRelay.Core.Server
         /// </summary>
         public string? ServerDBApiKey { get; }
 
-        public bool ServerDBAllowUnverifiedServers { get; }
-
         /// <summary>
         /// Indicates whether the matching service should try to force the user into any available game server,
         /// in the event that there are not enough game servers to create the requested session.
@@ -76,7 +74,7 @@ namespace EchoRelay.Core.Server
         public ServerSettings(ushort port = 777, string apiServicePath = "/api", string configServicePath = "/config",
             string loginServicePath = "/login", string matchingServicePath = "/matching",
             string serverdbServicePath = "/serverdb", string transactionServicePath = "/transaction", TimeSpan? disconnectedSessionTimeout = null,
-            string? serverDbApiKey = null, bool serverDbAllowUnverifiedServers = false, bool forceIntoAnySessionIfCreationFails = false, bool favorPopulationOverPing = true)
+            string? serverDbApiKey = null, bool forceIntoAnySessionIfCreationFails = false, bool favorPopulationOverPing = true)
         {
             Port = port;
             ApiServicePath = apiServicePath;
@@ -88,7 +86,6 @@ namespace EchoRelay.Core.Server
 
             SessionDisconnectedTimeout = disconnectedSessionTimeout ?? TimeSpan.FromMinutes(1);
             ServerDBApiKey = string.IsNullOrEmpty(serverDbApiKey) ? null : serverDbApiKey;
-            ServerDBAllowUnverifiedServers = serverDbAllowUnverifiedServers;
             ForceIntoAnySessionIfCreationFails = forceIntoAnySessionIfCreationFails;
             FavorPopulationOverPing = favorPopulationOverPing;
         }
@@ -120,7 +117,7 @@ namespace EchoRelay.Core.Server
                 apiServiceHost: httpHost + ApiServicePath,
                 configServiceHost: webSocketHost + ConfigServicePath,
                 loginServiceHost: webSocketHost + LoginServicePath + $"?auth=AccountPassword&displayname=AccountName",
-                matchingServiceHost: webSocketHost + MatchingServicePath + "?unverifiedservers=false",
+                matchingServiceHost: webSocketHost + MatchingServicePath,
                 serverdbServiceHost: serverConfig ? serverDBHost : null,
                 transactionServiceHost: webSocketHost + TransactionServicePath,
                 publisherLock: publisherLock
