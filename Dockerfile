@@ -5,12 +5,12 @@ WORKDIR /App
 # Copy everything
 COPY . ./
 # Restore as distinct layers
-RUN dotnet restore EchoRelay.App.Headless
+RUN dotnet restore EchoRelay.Cli
 # Build and publish a release
-RUN dotnet publish EchoRelay.App.Headless -c Release -o out
+RUN dotnet publish EchoRelay.Cli -c Release -o out
 
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /App
 COPY --from=build-env /App/out .
-ENTRYPOINT ["dotnet", "EchoRelay.App.Headless.dll"]
+ENTRYPOINT ["dotnet", "EchoRelay.Cli.dll"]
