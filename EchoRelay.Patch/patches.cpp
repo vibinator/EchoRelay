@@ -82,6 +82,8 @@ VOID PatchDetour(PVOID* ppPointer, PVOID pDetour)
     DetourTransactionCommit();
 }
 
+
+
 /// <summary>
 /// A detour hook for the game's "write log" function. It intercepts overly noisy logs and ensures they are outputted over stdout/stderr for headless mode.
 /// </summary>
@@ -460,6 +462,14 @@ UINT64 LoadLocalConfigHook(PVOID pGame)
         // Fixed time step is in microseconds, tick rate is per second.
         UINT32* timeStep = (UINT32*)(*(CHAR**)(EchoVR::g_GameBaseAddress + 0x020A00E8) + 0x90);
         *timeStep = 1000000 / headlessTimeStep;
+
+        // Patches the game to fix the delta time calculation for when using fixedtimestep.
+        // Change condtion for if deltatime is higher than timestep tell engine time is deltatime.
+        BYTE Patch1[] = {
+        0x73, 0x7A 
+        };
+        ProcessMemcpy(EchoVR::g_GameBaseAddress + 0xCF46D, Patch1, sizeof(Patch1));
+        
     }
 
     // Store a reference to the local config.
