@@ -226,6 +226,8 @@ namespace EchoRelay.Core.Server.Services.Login
                     }
 
                     Storage.Accounts.Set(account);
+                    await sender.Send(new LoggedInUserProfileSuccess(account.AccountIdentifier, account.Profile));
+                    await sender.Send(new TcpConnectionUnrequireEvent());
                 }
                 catch (Exception e)
                 {
