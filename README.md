@@ -1,6 +1,8 @@
-﻿# EchoRelay
+# EchoRelay
 
-[_**This project is discontinued**: It is unlikely to get any updates past this point, unless my last commit introduced major breaking changes._]
+### _**This is a fork of 'Xenomega/EchoRelay' which is being actively updated,**_ This fork's aim is to impove on the work of Xenomega's EchoRelay.
+
+---
 
 `EchoRelay` is a proof-of-concept reimplementation of [Echo VR](https://en.wikipedia.org/wiki/Lone_Echo)'s web services and dedicated game servers. It was created for
 educational/research purposes, to explore video game backend infrastructure design and service implementations.
@@ -254,5 +256,7 @@ This project was developed with additional considerations to uphold ethical inte
 - Please don't associate `EchoRelay` to any malicious or unlawful behavior.
 
 ## Shoutouts
+
+Thanks to ([@Xenomega](https://github.com/Xenomega) for creating this project and for bringing EchoVR back.
 
 Thanks to [@dualgame](https://github.com/Dualgame) for information about how different user flows are expected to work, you were a tremendous help in providing context, so this could be reimplemented and operate as expected.
