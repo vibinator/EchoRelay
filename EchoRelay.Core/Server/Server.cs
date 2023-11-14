@@ -13,6 +13,7 @@ using EchoRelay.Core.Utils;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.WebSockets;
+using EchoRelay.Core.Monitoring;
 using static EchoRelay.Core.Server.Services.Service;
 
 namespace EchoRelay.Core.Server
@@ -36,6 +37,11 @@ namespace EchoRelay.Core.Server
         /// The settings for the server to operate under.
         /// </summary>
         public ServerSettings Settings { get; private set; }
+        /// <summary>
+        /// The API manager for monitoring
+        /// </summary>
+        public ApiManager? apiManager { get; private set; }
+        
         /// <summary>
         /// The persistent storage layer for the server.
         /// </summary>
@@ -174,6 +180,9 @@ namespace EchoRelay.Core.Server
                 { Settings.ServerDBServicePath.ToLower(), ServerDBService },
                 { Settings.TransactionServicePath.ToLower(), TransactionService },
             }.AsReadOnly();
+            
+            apiManager = ApiManager.Instance;
+
         }
         #endregion
 
@@ -186,6 +195,7 @@ namespace EchoRelay.Core.Server
         /// <exception cref="InvalidOperationException">An exception thrown if the server is already started when this method is called.</exception>
         public async Task Start(CancellationTokenSource? cancellationTokenSource = null)
         {
+            Console.WriteLine("Starting server...");
             // If we are running already, throw an exception.
             if (Running)
             {
@@ -211,6 +221,18 @@ namespace EchoRelay.Core.Server
 
             // Fire our started event
             OnServerStarted?.Invoke(this);
+
+            ServerObject server = new ServerObject();
+            ServiceConfig serviceConfig = Settings.GenerateServiceConfig(PublicIPAddress?.ToString() ?? "localhost", apiKey:false);
+            server.ApiServiceHost = serviceConfig.ApiServiceHost;
+            server.LoginServiceHost = serviceConfig.LoginServiceHost;
+            server.ConfigServiceHost = serviceConfig.ConfigServiceHost;
+            server.MatchingServiceHost = serviceConfig.MatchingServiceHost;
+            server.ServerDbHost = serviceConfig.ServerDBServiceHost;
+            server.TransactionServiceHost = serviceConfig.TransactionServiceHost;
+            server.Ip = PublicIPAddress?.ToString() ?? "localhost";
+            server.Online = true;
+            _ = Task.Run(() => apiManager?.Server.EditServer(server, server.Ip));
 
             // Enter a loop to accept new web socket connections.
             try
@@ -297,8 +319,20 @@ namespace EchoRelay.Core.Server
         /// Stops the server and its underlying services.
         /// Note: Servers are run in another task. This method may return before the server has stopped.
         /// </summary>
-        public void Stop()
+        public async void Stop()
         {
+            ServerObject server = new ServerObject();
+            server.Ip = PublicIPAddress?.ToString() ?? "localhost";
+            server.Online = false;
+            _ = Task.Run(() => apiManager?.Server.EditServer(server, server.Ip));  
+            apiManager.peerStatsObject.ServerIp = PublicIPAddress?.ToString();
+            apiManager.peerStatsObject.Login = 0;
+            apiManager.peerStatsObject.Matching = 0;
+            apiManager.peerStatsObject.Config = 0;
+            apiManager.peerStatsObject.Transaction = 0;
+            apiManager.peerStatsObject.ServerDb = 0;
+            await apiManager.PeerStats.EditPeerStats(apiManager.peerStatsObject,
+                    PublicIPAddress?.ToString() ?? "localhost");
             // Cancel any cancellation token we have now.
             _cancellationTokenSource?.Cancel();
         }

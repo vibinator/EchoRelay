@@ -1,11 +1,13 @@
-﻿using EchoRelay.Core.Server;
+﻿using EchoRelay.Core.Monitoring;
 using EchoRelay.Core.Utils;
 using Newtonsoft.Json;
+using Server = EchoRelay.Core.Server.Server;
 
 namespace EchoRelay.App.Forms.Controls
 {
     public partial class ServerInfoControl : UserControl
     {
+        ApiManager _apiManager = ApiManager.Instance;
         public ServerInfoControl()
         {
             InitializeComponent();
@@ -36,6 +38,16 @@ namespace EchoRelay.App.Forms.Controls
                     rtbGeneratedServiceConfig.Text = "";
                 }
             }
+            
+            
+            _apiManager.peerStatsObject.ServerIp = server?.PublicIPAddress?.ToString() ?? "localhost";
+            _apiManager.peerStatsObject.Login = server?.LoginService.Peers.Count ?? 0;
+            _apiManager.peerStatsObject.Matching = server?.MatchingService.Peers.Count ?? 0;
+            _apiManager.peerStatsObject.Config = server?.ConfigService.Peers.Count ?? 0;
+            _apiManager.peerStatsObject.Transaction = server?.TransactionService.Peers.Count ?? 0;
+            _apiManager.peerStatsObject.ServerDb = server?.ServerDBService.Peers.Count ?? 0;
+            Task.Run(() => _apiManager.PeerStats.EditPeerStats(_apiManager.peerStatsObject, server?.PublicIPAddress?.ToString() ?? "localhost"));
+
         }
 
         private void btnCopyServiceConfig_Click(object sender, EventArgs e)

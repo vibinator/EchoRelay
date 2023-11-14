@@ -8,6 +8,9 @@ using EchoRelay.Core.Utils;
 using Microsoft.AspNetCore.Components.Web;
 using Newtonsoft.Json;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using EchoRelay.Core.Monitoring;
+using Server = EchoRelay.Core.Server.Server;
 
 namespace EchoRelay.Cli
 {
@@ -20,11 +23,13 @@ namespace EchoRelay.Cli
         /// <summary>
         /// The instance of the server hosting central services.
         /// </summary>
-        private static Server Server;
+        private static Server? Server;
         /// <summary>
         /// The update timer used to trigger a peer stats update on a given interval.
         /// </summary>
         private static System.Timers.Timer? peerStatsUpdateTimer;
+
+        private static ApiManager? apiManager;
         /// <summary>
         /// The time that the server was started.
         /// </summary>
@@ -33,6 +38,22 @@ namespace EchoRelay.Cli
         /// A mutex lock object to be used when printing to console, to avoid color collisions.
         /// </summary>
         private static object _printLock = new object();
+        
+        [DllImport("Kernel32")]
+        private static extern bool SetConsoleCtrlHandler(EventHandler handler, bool add);
+
+        private delegate bool EventHandler(CtrlType sig);
+        private static EventHandler? consoleCloseHandler;
+
+        // Enum to represent different CtrlTypes
+        private enum CtrlType
+        {
+            CTRL_C_EVENT = 0,
+            CTRL_BREAK_EVENT = 1,
+            CTRL_CLOSE_EVENT = 2,
+            CTRL_LOGOFF_EVENT = 5,
+            CTRL_SHUTDOWN_EVENT = 6
+        }
 
         /// <summary>
         /// The CLI argument options for the application.
@@ -139,6 +160,8 @@ namespace EchoRelay.Cli
                         )
                     );
 
+                apiManager = ApiManager.Instance;
+                
                 // Set up all event handlers.
                 Server.OnServerStarted += Server_OnServerStarted;
                 Server.OnServerStopped += Server_OnServerStopped;
@@ -149,6 +172,10 @@ namespace EchoRelay.Cli
                 Server.ServerDBService.Registry.OnGameServerRegistered += Registry_OnGameServerRegistered;
                 Server.ServerDBService.Registry.OnGameServerUnregistered += Registry_OnGameServerUnregistered;
                 Server.ServerDBService.OnGameServerRegistrationFailure += ServerDBService_OnGameServerRegistrationFailure;
+                
+                // Set up the event handler for the console close event
+                consoleCloseHandler += new EventHandler(ConsoleCloseHandler);
+                SetConsoleCtrlHandler(consoleCloseHandler, true);
 
                 // Set up all verbose event handlers.
                 if (options.Verbose)
@@ -187,6 +214,8 @@ namespace EchoRelay.Cli
                 }
             }
 
+            updateServerInfo();
+
             // Start the peer stats update timer
             startedTime = DateTime.UtcNow;
             peerStatsUpdateTimer = new System.Timers.Timer(Options!.StatsUpdateInterval);
@@ -197,14 +226,14 @@ namespace EchoRelay.Cli
         private static void PeerStatsUpdateTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
             Info($"[PEERSTATS] " +
-                $"elapsed: {(DateTime.UtcNow - startedTime)}, " +
-                $"gameservers: {Server.ServerDBService.Registry.RegisteredGameServers.Count}, " +
-                $"login: {Server.LoginService.Peers.Count}, " +
-                $"config: {Server.ConfigService.Peers.Count}, " +
-                $"matching: {Server.MatchingService.Peers.Count}, " +
-                $"serverdb: {Server.ServerDBService.Peers.Count}, " +
-                $"transaction: {Server.TransactionService.Peers.Count}"
-                );
+                 $"elapsed: {(DateTime.UtcNow - startedTime)}, " +
+                 $"gameservers: {Server.ServerDBService.Registry.RegisteredGameServers.Count}, " +
+                 $"login: {Server.LoginService.Peers.Count}, " +
+                 $"config: {Server.ConfigService.Peers.Count}, " +
+                 $"matching: {Server.MatchingService.Peers.Count}, " +
+                 $"serverdb: {Server.ServerDBService.Peers.Count}, " +
+                 $"transaction: {Server.TransactionService.Peers.Count}"
+            );
         }
 
         private static void Server_OnServerStopped(Server server)
@@ -214,6 +243,8 @@ namespace EchoRelay.Cli
 
             // Print our server stopped message
             Info("[SERVER] Server stopped");
+            
+            updateServerInfo();
         }
 
         private static void Server_OnAuthorizationResult(Server server, System.Net.IPEndPoint client, bool authorized)
@@ -221,13 +252,27 @@ namespace EchoRelay.Cli
             if(!authorized)
                 Error($"[SERVER] client({client.Address}:{client.Port}) failed authorization");
         }
+
+        private static void updateServerInfo()
+        {
+            apiManager.peerStatsObject.ServerIp = Server?.PublicIPAddress?.ToString() ?? "localhost";
+            apiManager.peerStatsObject.Login = Server?.LoginService.Peers.Count;
+            apiManager.peerStatsObject.Matching = Server?.MatchingService.Peers.Count;
+            apiManager.peerStatsObject.Config = Server?.ConfigService.Peers.Count;
+            apiManager.peerStatsObject.Transaction = Server?.TransactionService.Peers.Count;
+            apiManager.peerStatsObject.ServerDb = Server?.ServerDBService.Peers.Count;
+            apiManager.peerStatsObject.GameServers = Server?.ServerDBService.Registry.RegisteredGameServers.Count;
+            Task.Run(() => apiManager.PeerStats.EditPeerStats(apiManager.peerStatsObject, apiManager.peerStatsObject.ServerIp));
+        }
         private static void Server_OnServicePeerConnected(Core.Server.Services.Service service, Core.Server.Services.Peer peer)
         {
             Info($"[{service.Name}] client({peer.Address}:{peer.Port}) connected");
+            updateServerInfo();
         }
         private static void Server_OnServicePeerDisconnected(Core.Server.Services.Service service, Core.Server.Services.Peer peer)
         {
             Info($"[{service.Name}] client({peer.Address}:{peer.Port}) disconnected");
+            updateServerInfo();
         }
         private static void Server_OnServicePeerAuthenticated(Core.Server.Services.Service service, Core.Server.Services.Peer peer, Core.Game.XPlatformId userId)
         {
@@ -237,11 +282,14 @@ namespace EchoRelay.Cli
         private static void Registry_OnGameServerRegistered(Core.Server.Services.ServerDB.RegisteredGameServer gameServer)
         {
             Info($"[{gameServer.Peer.Service.Name}] client({gameServer.Peer.Address}:{gameServer.Peer.Port}) registered game server (server_id={gameServer.ServerId}, region_symbol={gameServer.RegionSymbol}, version_lock={gameServer.VersionLock}, endpoint=<{gameServer.ExternalAddress}:{gameServer.Port}>)");
+            updateServerInfo();
         }
 
         private static void Registry_OnGameServerUnregistered(Core.Server.Services.ServerDB.RegisteredGameServer gameServer)
         {
             Info($"[{gameServer.Peer.Service.Name}] client({gameServer.Peer.Address}:{gameServer.Peer.Port}) unregistered game server (server_id={gameServer.ServerId}, region_symbol={gameServer.RegionSymbol}, version_lock={gameServer.VersionLock}, endpoint=<{gameServer.ExternalAddress}:{gameServer.Port}>)");
+            updateServerInfo();
+
         }
         private static void ServerDBService_OnGameServerRegistrationFailure(Peer peer, Core.Server.Messages.ServerDB.ERGameServerRegistrationRequest registrationRequest, string failureMessage)
         {
@@ -309,6 +357,18 @@ namespace EchoRelay.Cli
                 Console.WriteLine(msg);
                 Console.ResetColor();
             }
+        }
+        
+        // Handler for the console close event
+        private static bool ConsoleCloseHandler(CtrlType sig)
+        {
+            Console.WriteLine("Console is closing. Performing cleanup...");
+            Server?.Stop();
+    
+            Thread.Sleep(1500);
+            
+            // Allow the program to exit
+            return true;
         }
     }
 }
