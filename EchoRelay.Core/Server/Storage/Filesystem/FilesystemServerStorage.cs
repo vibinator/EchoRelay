@@ -35,8 +35,10 @@ namespace EchoRelay.Core.Server.Storage.Filesystem
 
         private readonly object _symbolCacheLock = new object();
 
-        public FilesystemServerStorage(string rootDirectory)
+        public FilesystemServerStorage(string rootDirectory, bool disableCache = false)
         {
+            int cacheSize = disableCache ? 0 : 0x100;
+
             // Verify our root directory exists
             Directory.CreateDirectory(rootDirectory);
 
@@ -51,13 +53,13 @@ namespace EchoRelay.Core.Server.Storage.Filesystem
             var symbolCacheFilePath = Path.Join(RootDirectory, "symbols.json");
 
             // Create our resource containers
-            _accessControlList = new FilesystemResourceProvider<AccessControlListResource>(this, accessControlListFilePath);
-            _accounts = new FilesystemResourceCollectionProvider<XPlatformId, AccountResource>(this, accountsDirectory, "*.json", x => $"{x}.json", 0x100);
-            _channelInfo = new FilesystemResourceProvider<ChannelInfoResource>(this, channelInfoFilePath);
-            _configs = new FilesystemResourceCollectionProvider<(string Type, string Identifier), ConfigResource>(this, configResourceDirectory, "*.json", x => $"{x.Identifier}.json", 0x100);
-            _documents = new FilesystemResourceCollectionProvider<(string Type, string Language), DocumentResource>(this, documentResourceDirectory, "*.json", x => $"{x.Type}_{x.Language}.json", 0x100);
-            _loginSettings = new FilesystemResourceProvider<LoginSettingsResource>(this, loginSettingsFilePath);
-            _symbolCache = new FilesystemResourceProvider<SymbolCache>(this, symbolCacheFilePath);
+            _accessControlList = new FilesystemResourceProvider<AccessControlListResource>(this, accessControlListFilePath, disableCache);
+            _accounts = new FilesystemResourceCollectionProvider<XPlatformId, AccountResource>(this, accountsDirectory, "*.json", x => $"{x}.json", cacheSize);
+            _channelInfo = new FilesystemResourceProvider<ChannelInfoResource>(this, channelInfoFilePath, disableCache);
+            _configs = new FilesystemResourceCollectionProvider<(string Type, string Identifier), ConfigResource>(this, configResourceDirectory, "*.json", x => $"{x.Identifier}.json", cacheSize);
+            _documents = new FilesystemResourceCollectionProvider<(string Type, string Language), DocumentResource>(this, documentResourceDirectory, "*.json", x => $"{x.Type}_{x.Language}.json", cacheSize);
+            _loginSettings = new FilesystemResourceProvider<LoginSettingsResource>(this, loginSettingsFilePath, disableCache);
+            _symbolCache = new FilesystemResourceProvider<SymbolCache>(this, symbolCacheFilePath, disableCache);
         }
     }
 }

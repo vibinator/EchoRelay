@@ -17,14 +17,17 @@ namespace EchoRelay.Core.Server.Storage.Filesystem
         /// </summary>
         public string FilePath { get; set; }
 
+        private bool _disableCache;
+
         /// <summary>
         /// A cached copy of the resource populated when the item is read from disk or written to disk.
         /// </summary>
         private V? _resource;
 
-        public FilesystemResourceProvider(ServerStorage storage, string filePath) : base(storage)
+        public FilesystemResourceProvider(ServerStorage storage, string filePath, bool disableCache = false) : base(storage)
         {
             FilePath = filePath;
+            _disableCache = disableCache;
         }
 
 
@@ -47,7 +50,7 @@ namespace EchoRelay.Core.Server.Storage.Filesystem
         protected override V? GetInternal()
         {
             // Cache the resource from file if it hasn't been already, then return it.
-            if (_resource == null)
+            if (_resource == null || _disableCache)
             {
                 string resourceJson = File.ReadAllText(FilePath);
                 _resource = JsonConvert.DeserializeObject<V>(resourceJson);

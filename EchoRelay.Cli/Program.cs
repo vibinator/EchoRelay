@@ -71,6 +71,9 @@ namespace EchoRelay.Cli
 
             [Option('v', "verbose", Required = false, Default = false, HelpText = "Verbose output for every message sent between clients and servers.")]
             public bool Verbose { get; set; } = true;
+
+            [Option("disable-cache", Required = false, Default = false, HelpText = "Disable the file cache. Edits to JSON files will be immediately effective.")]
+            public bool DisableCache { get; set; } = true;
         }
 
         /// <summary>
@@ -100,7 +103,8 @@ namespace EchoRelay.Cli
                 }
 
                 // Create our file system storage and open it.
-                ServerStorage serverStorage = new FilesystemServerStorage(options.DatabaseFolder);
+                ServerStorage serverStorage = new FilesystemServerStorage(options.DatabaseFolder, Options.DisableCache);
+                
                 serverStorage.Open();
 
                 // Check if initial deployment needs to be performed.
