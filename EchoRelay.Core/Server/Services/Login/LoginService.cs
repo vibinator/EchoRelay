@@ -184,8 +184,8 @@ namespace EchoRelay.Core.Server.Services.Login
                         case "tint":
                             account.Profile.Server.Loadout.Instances.Unified.Slots.Tint = itemName;
                             account.Profile.Server.Loadout.Instances.Unified.Slots.TintBody = itemName;
-                            account.Profile.Server.Loadout.Instances.Unified.Slots.TintAlignmentA = itemName;
-                            account.Profile.Server.Loadout.Instances.Unified.Slots.TintAlignmentB = itemName;
+                            /*account.Profile.Server.Loadout.Instances.Unified.Slots.TintAlignmentA = itemName;
+                            account.Profile.Server.Loadout.Instances.Unified.Slots.TintAlignmentB = itemName;*/
                             break;
                         case "pattern":
                             account.Profile.Server.Loadout.Instances.Unified.Slots.Pattern = itemName;
