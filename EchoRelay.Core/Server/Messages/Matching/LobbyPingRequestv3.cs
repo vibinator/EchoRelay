@@ -18,7 +18,10 @@ namespace EchoRelay.Core.Server.Messages.Matching
         // TODO
         public ushort Unk0;
         public ushort Unk1;
-        public uint Unk2;
+
+        // Not definitive, clients will only return servers under MaxLatency IF they have any
+        // Otherwise, they will return any servers they have
+        public uint MaxLatency;
 
         /// <summary>
         /// The endpoints which the client should be asked to ping.
@@ -34,7 +37,7 @@ namespace EchoRelay.Core.Server.Messages.Matching
         {
             Unk0 = 0;
             Unk1 = 0;
-            Unk2 = 0;
+            MaxLatency = 0;
             Endpoints = Array.Empty<EndpointData>();
         }
         /// <summary>
@@ -42,13 +45,13 @@ namespace EchoRelay.Core.Server.Messages.Matching
         /// </summary>
         /// <param name="unk0">TODO: Unknown.</param>
         /// <param name="unk1">TODO: Unknown.</param>
-        /// <param name="unk2">TODO: Unknown.</param>
+        /// <param name="maxLatency">TODO: Unknown.</param>
         /// <param name="endpoints">The endpoints to provide to the client for the ping request.</param>
-        public LobbyPingRequestv3(ushort unk0, ushort unk1, uint unk2, EndpointData[] endpoints)
+        public LobbyPingRequestv3(ushort unk0, ushort unk1, uint maxLatency, EndpointData[] endpoints)
         {
             Unk0 = unk0;
             Unk1 = unk1;
-            Unk2 = unk2;
+            MaxLatency = maxLatency;
             Endpoints = endpoints;
         }
         #endregion
@@ -62,7 +65,7 @@ namespace EchoRelay.Core.Server.Messages.Matching
         {
             io.Stream(ref Unk0);
             io.Stream(ref Unk1);
-            io.Stream(ref Unk2);
+            io.Stream(ref MaxLatency);
 
             // If we're reading, initialize our buffer to the correct size.
             if (io.StreamMode == StreamMode.Read)
@@ -90,7 +93,7 @@ namespace EchoRelay.Core.Server.Messages.Matching
             return $"{GetType().Name}(" +
                 $"unk0={Unk0}, " +
                 $"unk1={Unk1}, " +
-                $"unk2={Unk2}, " +
+                $"unk2={MaxLatency}, " +
                 $"endpoints=[{string.Join(", ", Endpoints.AsEnumerable())}]" +
                 $")";
         }
