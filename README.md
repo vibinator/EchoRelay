@@ -38,7 +38,7 @@ The following features are supported by `EchoRelay`:
 	- ✔️ Spectator and Game Admin (moderator) support
 	- ✔️ Support for different client flows (e.g. `-lobbyid`, which requests joining a specific lobby by UUID)
 	- ❌ Partying-up with friends in a squad
-	- ❌ Persisted armor changes/updates across game sessions
+	- ✔️ Persisted armor changes/updates across game sessions
 - ✔️ Support for basic server operator and administrator flows:
 	- ✔️ Kick users from game session
 	- ✔️ Ban accounts until a given date/time
