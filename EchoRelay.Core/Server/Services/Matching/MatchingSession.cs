@@ -17,7 +17,18 @@ namespace EchoRelay.Core.Server.Services.Matching
         {
             get
             {
-                return (NewSessionLobbyType == LobbyType.Private) ? new LobbyType[] { LobbyType.Unassigned } : new LobbyType[] { LobbyType.Unassigned, LobbyType.Public };
+                // People wanting a private server should never be put into an already existing public server
+                if (NewSessionLobbyType == LobbyType.Private)
+                    return new LobbyType[] { LobbyType.Unassigned };
+
+                // Spectators should only be able to choose from already-running public lobbies
+                if (TeamIndex == TeamIndex.Spectator)
+                    return new LobbyType[] { LobbyType.Public };
+
+                // This means we're probably just matchmaking
+                // Nothing special here, let them choose from any available server
+                // Maybe the matchmaker should be a bit more forward on which servers it wants to present to the client
+                return new LobbyType[] { LobbyType.Unassigned, LobbyType.Public };
             }
         }
         public ERGameServerStartSession.SessionSettings SessionSettings { get; private set; }
