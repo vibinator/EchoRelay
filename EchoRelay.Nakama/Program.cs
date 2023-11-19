@@ -252,18 +252,11 @@ namespace EchoRelay.Nakama
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
             }
 
-            if (options.Verbose)
-            {
-                logConfig.MinimumLevel.Verbose();
-            }
-            else if (options.Debug)
-            {
-                logConfig.MinimumLevel.Debug();
-            }
-            else
-            {
-                logConfig.MinimumLevel.Information();
-            }
+            logConfig = options.Verbose
+                ? logConfig.MinimumLevel.Verbose()
+                : options.Debug
+                    ? logConfig.MinimumLevel.Debug()
+                    : logConfig.MinimumLevel.Information();
 
             Log.Logger = logConfig.CreateLogger();
         }
@@ -292,11 +285,16 @@ namespace EchoRelay.Nakama
                     Log.Error($"[SERVER] Failed to output generated service config to path \"{Options!.OutputConfigPath}\":\n{ex}");
                 }
             }
+
+            // Start the peer stats update timer
+            peerStatsUpdateTimer = new System.Timers.Timer(Options!.StatsUpdateInterval);
+            peerStatsUpdateTimer.Start();
+            peerStatsUpdateTimer.Elapsed += PeerStatsUpdateTimer_Elapsed;
         }
 
         private static void PeerStatsUpdateTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            Log.Verbose($"[PEERSTATS] " +
+            Log.Information($"[PEERSTATS] " +
                 $"gameservers: {Server.ServerDBService.Registry.RegisteredGameServers.Count}, " +
                 $"login: {Server.LoginService.Peers.Count}, " +
                 $"config: {Server.ConfigService.Peers.Count}, " +
@@ -308,6 +306,9 @@ namespace EchoRelay.Nakama
 
         private static void Server_OnServerStopped(Server server)
         {
+            // Stop the update timer.
+            peerStatsUpdateTimer?.Stop();
+
             // Print our server stopped message
             Log.Information("[SERVER] Server stopped");
             Log.CloseAndFlush();
@@ -318,17 +319,20 @@ namespace EchoRelay.Nakama
             if (!authorized)
                 Log.Information($"[SERVER] client({client.Address}:{client.Port}) failed authorization");
         }
+
         private static void Server_OnServicePeerConnected(Core.Server.Services.Service service, Core.Server.Services.Peer peer)
         {
             Log.Debug($"[{service.Name}] client({peer.Address}:{peer.Port}) connected");
         }
+
         private static void Server_OnServicePeerDisconnected(Core.Server.Services.Service service, Core.Server.Services.Peer peer)
         {
             Log.Debug($"[{service.Name}] client({peer.Address}:{peer.Port}) disconnected");
         }
+
         private static void Server_OnServicePeerAuthenticated(Core.Server.Services.Service service, Core.Server.Services.Peer peer, Core.Game.XPlatformId userId)
         {
-            Log.Information($"[{service.Name}] client({peer.Address}:{peer.Port}) authenticated as '{peer.UserDisplayName}'");
+            Log.Information($"[{service.Name}] client({peer.Address}:{peer.Port}) authenticated as account='{userId}' displayName='{peer.UserDisplayName}'");
         }
 
         private static void Registry_OnGameServerRegistered(Core.Server.Services.ServerDB.RegisteredGameServer gameServer)
@@ -340,6 +344,7 @@ namespace EchoRelay.Nakama
         {
             Log.Information($"[{gameServer.Peer.Service.Name}] client({gameServer.Peer.Address}:{gameServer.Peer.Port}) unregistered game server (server_id={gameServer.ServerId}, region_symbol={gameServer.RegionSymbol}, version_lock={gameServer.VersionLock}, endpoint=<{gameServer.ExternalAddress}:{gameServer.Port}>)");
         }
+
         private static void ServerDBService_OnGameServerRegistrationFailure(Peer peer, Core.Server.Messages.ServerDB.ERGameServerRegistrationRequest registrationRequest, string failureMessage)
         {
             Log.Error($"[{peer.Service.Name}] client({peer.Address}:{peer.Port}) failed to register game server: \"{failureMessage}\"");
