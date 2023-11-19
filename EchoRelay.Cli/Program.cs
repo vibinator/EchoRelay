@@ -1,13 +1,11 @@
 ﻿using CommandLine;
 using EchoRelay.Core.Server;
-using EchoRelay.Core.Server.Messages;
 using EchoRelay.Core.Server.Services;
 using EchoRelay.Core.Server.Storage;
 using EchoRelay.Core.Server.Storage.Filesystem;
 using EchoRelay.Core.Utils;
 using Newtonsoft.Json;
 using Serilog;
-using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 
 namespace EchoRelay.Cli
@@ -185,16 +183,11 @@ namespace EchoRelay.Cli
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
             }
 
-            if (options.Verbose)
-            {
-                logConfig.MinimumLevel.Verbose();
-            } else if (options.Debug)
-            {
-                logConfig.MinimumLevel.Debug();
-            } else
-            {
-                logConfig.MinimumLevel.Information();
-            }
+            logConfig = options.Verbose
+                ? logConfig.MinimumLevel.Verbose()
+                : options.Debug
+                    ? logConfig.MinimumLevel.Debug()
+                    : logConfig.MinimumLevel.Information();
 
             Log.Logger = logConfig.CreateLogger();
         }
@@ -223,18 +216,16 @@ namespace EchoRelay.Cli
                     Log.Error($"[SERVER] Failed to output generated service config to path \"{Options!.OutputConfigPath}\":\n{ex}");
                 }
             }
+
             // Start the peer stats update timer
-            if (Options.Verbose)
-            {
-                peerStatsUpdateTimer = new System.Timers.Timer(Options!.StatsUpdateInterval);
-                peerStatsUpdateTimer.Start();
-                peerStatsUpdateTimer.Elapsed += PeerStatsUpdateTimer_Elapsed;
-            }
+            peerStatsUpdateTimer = new System.Timers.Timer(Options!.StatsUpdateInterval);
+            peerStatsUpdateTimer.Start();
+            peerStatsUpdateTimer.Elapsed += PeerStatsUpdateTimer_Elapsed;
         }
 
         private static void PeerStatsUpdateTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            Log.Verbose($"[PEERSTATS] " +
+            Log.Information($"[PEERSTATS] " +
                 $"gameservers: {Server.ServerDBService.Registry.RegisteredGameServers.Count}, " +
                 $"login: {Server.LoginService.Peers.Count}, " +
                 $"config: {Server.ConfigService.Peers.Count}, " +
@@ -272,7 +263,7 @@ namespace EchoRelay.Cli
 
         private static void Server_OnServicePeerAuthenticated(Core.Server.Services.Service service, Core.Server.Services.Peer peer, Core.Game.XPlatformId userId)
         {
-            Log.Information($"[{service.Name}] client({peer.Address}:{peer.Port}) authenticated as '{peer.UserDisplayName}'");
+            Log.Information($"[{service.Name}] client({peer.Address}:{peer.Port}) authenticated as account='{userId}' displayName='{peer.UserDisplayName}'");
         }
 
         private static void Registry_OnGameServerRegistered(Core.Server.Services.ServerDB.RegisteredGameServer gameServer)
