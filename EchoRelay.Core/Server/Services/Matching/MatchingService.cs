@@ -141,6 +141,17 @@ namespace EchoRelay.Core.Server.Services.Matching
                 return;
             }
 
+            if (matchingSession.GameTypeSymbol != null)
+            {
+                string? gameTypeName = Server.SymbolCache.GetName(matchingSession.GameTypeSymbol.Value);
+                bool isAIMatch = gameTypeName?.EndsWith("_ai", StringComparison.OrdinalIgnoreCase) ?? false;
+                if (isAIMatch)
+                {
+                    await SendLobbySessionFailure(sender, LobbySessionFailureErrorCode.BadRequest, "AI matches are not allowed");
+                    return;
+                }
+            }
+
             // Send the status to the user.
             // TODO: This should be a response to LobbyMatchmakerStatusRequest and should be relocated.
             //  That request is sent along with this request we are currently processing, so it is technically fine to respond here (for the client), but it's just ugly in terms of code correctness.
