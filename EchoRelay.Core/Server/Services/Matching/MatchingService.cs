@@ -278,15 +278,27 @@ namespace EchoRelay.Core.Server.Services.Matching
                     unfilledServerOnly: true
                 );
 
+
+                // Determine if the user is trying to join a private match.
+                bool isPrivateMatch = false;
+                if (matchingSession.GameTypeSymbol != null)
+                {
+                    string? gameTypeName;
+                    gameTypeName = Server.SymbolCache.GetName(matchingSession.GameTypeSymbol.Value);
+                    isPrivateMatch = gameTypeName?.EndsWith("_private", StringComparison.OrdinalIgnoreCase) ?? false;
+                }
+
                 // All servers should either have no session started, or match the criteria we filtered for.
                 // Depending on our matching strategy, we will first sort by population or ping, followed by the latter.
                 // The most optimal game server will be selected.
-                if (Server.Settings.FavorPopulationOverPing)
+                if (Server.Settings.FavorPopulationOverPing && !isPrivateMatch)
                 {
                     // Select the game server which is most full.
                     selectedGameServer = gameServers.MaxBy(x => (float)x.SessionPlayerCount / x.SessionPlayerLimits.TotalPlayerLimit);
+                    if(selectedGameServer?.SessionPlayerCount == 0) selectedGameServer = null;
                 }
-                else
+                // If no game servers were found, or we are trying to join a private match, select the lowest ping server.
+                if(selectedGameServer == null)
                 {
                     // Sort the game servers with preference of filters: session started, lowest ping, highest player count.
                     var sortedGameServers = gameServers.Select(gameServer =>
