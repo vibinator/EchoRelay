@@ -209,7 +209,7 @@ namespace EchoRelay.Core.Server.Services.Matching
                 }
 
                 // Send a ping request to the peer.
-                await sender.Send(new LobbyPingRequestv3(0, 4, 175, pingEndpoints));
+                await sender.Send(new LobbyPingRequestv3(0, 4, 300, pingEndpoints));
             }
             await sender.Send(new TcpConnectionUnrequireEvent());
         }
